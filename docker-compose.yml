@@ -1,0 +1,64 @@
+services:
+  mariadb:
+    container_name: moodle-db
+    image: mariadb:11.0
+    command: --ssl=0 --require_secure_transport=0 # Deactivate SSL for local development
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MOODLE_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MOODLE_DB_NAME}
+      MYSQL_USER: ${MOODLE_DB_USER}
+      MYSQL_PASSWORD: ${MOODLE_DB_PASSWORD}
+    volumes:
+      - ./mariadb/mariadb.cnf:/etc/mysql/conf.d/mariadb.cnf:ro
+      - moodle-db-data:/var/lib/mysql
+    ports:
+      - ${MOODLE_DB_PORT}:3306
+    networks:
+      - moodle-network
+  moodle:
+    container_name: moodle-app
+    depends_on:
+      - mariadb
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:${MOODLE_HTTP_PORT}/login/index.php || exit 1" ]
+      interval: 10s
+      retries: 60
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        XDEBUG_PORT: ${XDEBUG_PORT}
+    # Automatically installs Moodle and starts apache daemon with www-data user
+    entrypoint: [/entrypoint.sh]
+    ports:
+      - ${MOODLE_HTTP_PORT}:80 # apache uses port 80
+    environment:
+      PHP_IDE_CONFIG: serverName=${PHP_SERVER_NAME}
+      MOODLE_DEBUG: 7
+      MOODLE_BRANCH: ${MOODLE_BRANCH}
+      MOODLE_URL: http://localhost:${MOODLE_HTTP_PORT}
+      MOODLE_DB_HOST: ${MOODLE_DB_HOST}
+      MOODLE_DB_NAME: ${MOODLE_DB_NAME}
+      MOODLE_DB_USER: ${MOODLE_DB_USER}
+      MOODLE_DB_PASSWORD: ${MOODLE_DB_PASSWORD}
+      MOODLE_ADMIN_USER: ${MOODLE_ADMIN_USER}
+      MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
+    volumes:
+      # Setup
+      - ./moodle/entrypoint.sh:/entrypoint.sh
+      # Moodle core
+      - moodle-src:/usr/src/moodle    # Moodle source code in internal volume for fast install
+      - moodle-data:/var/moodledata   # Moodle data persistence
+      # Plugins
+      # :cached directive makes any file created on the host property of the container user inside the container
+      #- ../plugins/auth_myplugin:/var/www/html/moodle/auth/myplugin:cached
+    networks:
+      - moodle-network
+
+volumes:
+  moodle-db-data:
+  moodle-data:
+  moodle-src:
+
+networks:
+  moodle-network:
