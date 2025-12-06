@@ -50,6 +50,12 @@ if [ ! -f "$MOODLE_SRC"/config.php ]; then
         --agree-license \
         --non-interactive
 
+	# Add phpunit configuration values
+	echo "" >> "$MOODLE_SRC"/config.php
+	echo "# PHPUnit configuration" >> "$MOODLE_SRC"/config.php
+	echo "\$CFG->phpunit_prefix = '${PHPUNIT_PREFIX}';" >> "$MOODLE_SRC"/config.php
+	echo "\$CFG->phpunit_dataroot = '${PHPUNIT_DATAROOT}';" >> "$MOODLE_SRC"/config.php
+
     # Set correct permissions for config.php
     chown www-data:www-data "$MOODLE_SRC"/config.php
     chmod 644 "$MOODLE_SRC"/config.php
@@ -60,7 +66,7 @@ else
 fi
 
 # Sync Moodle installation into the WORKDIR, without overriding plugins
-printf '🔨\t%s\n' "Syncing Moodle installation into the working directory $(realpath "$WORKDIR")"
+printf '🔨\t%s\n' "Syncing Moodle installation into the working directory $(realpath "$WORKDIR")..."
 
 rsync \
 	-a \
@@ -69,6 +75,14 @@ rsync \
 	--info=name \
 	"$MOODLE_SRC/" \
 	"$WORKDIR/"
+
+# Install dependencies on WORKDIR
+printf '🔨\t%s\n' "Installing dependencies..."
+composer install --no-interaction
+
+# Initialize PHPUnit environment
+printf '🔨\t%s\n' "Initializing PHPUnit environment..."
+php admin/tool/phpunit/cli/init.php
 
 printf '✅\t%s\n' "Moodle installation synced successfully."
 

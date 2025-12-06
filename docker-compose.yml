@@ -34,6 +34,8 @@ services:
       - ${MOODLE_HTTP_PORT}:80 # apache uses port 80
     environment:
       PHP_IDE_CONFIG: serverName=${PHP_SERVER_NAME}
+      PHPUNIT_PREFIX: phpu_
+      PHPUNIT_DATAROOT: /var/moodledata/phpunit
       MOODLE_DEBUG: 7
       MOODLE_BRANCH: ${MOODLE_BRANCH}
       MOODLE_URL: http://localhost:${MOODLE_HTTP_PORT}

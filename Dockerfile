@@ -10,6 +10,7 @@ RUN apt-get update && \
         git \
         unzip \
         rsync \
+        locales \
         libpng-dev \
         libjpeg62-turbo-dev \
         libfreetype-dev \
@@ -32,10 +33,17 @@ RUN apt-get update && \
         intl \
         opcache \
         curl \
-        sodium && \
+        sodium \
+        exif \
+        soap && \
     a2enmod rewrite && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install needed en_AU.UTF-8 locale for PHPUnit
+RUN sed -i 's/^# en_AU.UTF-8/en_AU.UTF-8/' /etc/locale.gen && \
+    locale-gen && \
+    update-locale LANG=en_AU.UTF-8
 
 # Copy Moodle configuration
 COPY ./moodle/moodle.ini /usr/local/etc/php/conf.d/moodle.ini
